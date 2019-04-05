@@ -1,0 +1,42 @@
+version: "3"
+services:
+
+    openldap:
+        container_name: ldap
+        image: osixia/openldap:1.2.4
+        ports:
+          - 389:389
+          - 636:636
+        networks:
+          - ldapnetwork
+        hostname: "ldap"
+        environment:
+          - 'LDAP_BASE_DN=dc=digitaltwin,dc=intra'
+          - 'LDAP_ADMIN_PASSWORD=YbTZp9eqF'
+          - 'LDAP_DOMAIN=digitaltwin.intra'
+          - 'LDAP_TLS=false'
+        command: >
+            --copy-service --loglevel debug
+        volumes:
+          - ${PWD}/ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom
+          
+
+    phpldapadmin:
+        container_name: phpldapadmin
+        image: osixia/phpldapadmin:0.7.2
+        depends_on:
+          - openldap
+        ports:
+          - 4200:80
+          - 5000:443
+        networks:
+          - ldapnetwork
+        environment:
+            - "PHPLDAPADMIN_LDAP_HOSTS=#PYTHON2BASH:[{'ldap': [{'server': [{'tls': False}, {'port': 389}]}, {'login': [{'bind_id': 'cn=admin,dc=digitaltwin,dc=intra'}, {'bind_pass': 'YbTZp9eqF'}]}]}]"
+            - "PHPLDAPADMIN_HTTPS=false"
+
+
+networks:
+  ldapnetwork:
+    # Use a custom driver
+    driver: bridge
